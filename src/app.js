@@ -1,24 +1,23 @@
 const express = require("express");
 
+
 const {connectDB} = require("./DB/db.js");
 
 // requiring models
-const {User} = require("./models/user.js")
+const {User} = require("./models/user.js");
 
 const app = express();
+
+app.use(express.json()); // to read the json data coming from the requests to body
 
 
 // routes 
 
 app.post("/signup",async (req,res) => {
+
  
  // creating a new instance of the user Model 
-    const user = new User ({
-        firstName : "Deepesh",
-        lastName : "Gaharwar",
-        emailId : "test1@gmail.com",
-        password : "test@123"
-    })
+    const user = new User (req.body);
   
     try{
 
