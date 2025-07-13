@@ -19,7 +19,7 @@ app.post("/signup",async (req,res) => {
  // creating a new instance of the user Model 
     const user = new User (req.body);
   
-    try{
+    try{ 
 
         await user.save();
 
@@ -88,19 +88,41 @@ app.delete("/user",async (req,res) => {
 
 
 // /user -> update the user in the db
-app.patch("/user", async (req,res) => {
+app.patch("/user/:userId", async (req,res) => {
     
-    const userId = req.body.userId;
+    const userId = req.params?.userId;
     const data = req.body;
 
+
     try {
+     
+     // user is allowed to change the certain fields only
+     const allowedUpdates = [
+        "photoUrl",
+        "about",
+        "gender",
+        "age",
+        "skills"
+     ]
+
+        const isAllowedUpdates = Object.keys(data).every((k) => allowedUpdates.includes(k));
+
+        if(!isAllowedUpdates){
+            throw new Error("Update not allowed");
+        }
+
+        if(data?.skills.length > 10){
+            throw new Error("Skills cannot be more than  10");
+        }
+      
+      // find and update the user
         await User.findByIdAndUpdate({_id : userId}, data, {
             runValidators : true,
         });
 
         res.send("User updated successfully")
     } catch (error) {
-        res.status(400).send("User is not updated .Please try again later !!!");
+        res.status(400).send("Update Failed !!!" + error.message);
     }
 })
 
