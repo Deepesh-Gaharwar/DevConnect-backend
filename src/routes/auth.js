@@ -53,9 +53,9 @@ authRouter.post("/login", async (req,res) => {
        const {emailId, password} = req.body;
      
        // is emailId valid 
-       if(!validator.isEmail(emailId)){
+        if(!validator.isEmail(emailId)){
        
-               throw new Error("Email is not valid!");
+            throw new Error("Email is not valid!");
        
         }
 
@@ -90,6 +90,18 @@ authRouter.post("/login", async (req,res) => {
         res.status(400).send("Error :" +error.message);
         
     }
+})
+
+
+// logout -> route
+authRouter.post("/logout", async (req,res) => {
+
+    res.cookie("token", null, { expires : new Date(Date.now()),
+
+    });
+   
+    res.status(200).send("Logout successful!");
+
 })
 
 
