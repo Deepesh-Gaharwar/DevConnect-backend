@@ -6,10 +6,15 @@ const {User} = require("./models/user.js");
 const {validateSignUpData} = require("./utils/validation.js");
 const bcrypt = require("bcrypt");
 const validator = require("validator");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/auth.js")
 
 
 
 app.use(express.json()); // to read the json data coming from the request to body
+
+app.use(cookieParser()); // to read the cokkies 
 
 
 // /signup -> route
@@ -79,6 +84,16 @@ app.post("/login", async (req,res) => {
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if(isPasswordValid){
+            
+            // create a JWT token
+
+            const token = await jwt.sign({ _id : user._id} , "DEV@Tinder$790");
+
+
+            // add the token to cookie and send the response back to the user
+
+            res.cookie("token",token);
+
             res.status(200).send("Login successfull!");
         }else{
             throw new Error("Invalid credentials!");
@@ -90,9 +105,41 @@ app.post("/login", async (req,res) => {
     }
 })
 
+// profile route handler
+app.get("/profile", userAuth, async (req,res) => {
+
+    try{
+
+        const cookies = req.cookies; // will get from the browser console of the logged in user
+
+        const {token} = cookies; 
+
+        if(!token){
+            throw new Error("Invalid Token!")
+        }
+
+        // validate my token
+        const decodedMessage = await jwt.verify(token, "DEV@Tinder$790"); // will get the decoded  _id of the user from the token
+
+        const { _id } = decodedMessage; // we will get info about the logged in user
+
+        const user = await User.findById(_id);
+
+        if(!user){
+            throw new Error("User does not exists");
+        }
+
+        res.status(200).send(user);
+
+    } catch(error){
+         
+        res.status(400).send("Error :" + error.message);
+    }
+})
+
 
 // get user by email
-app.get("/user",async (req,res) => {
+app.get("/user", async (req,res) => {
     const userEmail = req.body.emailId;
 
     try {
