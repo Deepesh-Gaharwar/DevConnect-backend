@@ -87,12 +87,12 @@ app.post("/login", async (req,res) => {
             
             // create a JWT token
 
-            const token = await jwt.sign({ _id : user._id} , "DEV@Tinder$790");
+            const token = await jwt.sign({ _id : user._id} , "DEV@Tinder$790", { expiresIn : "1d",});
 
 
             // add the token to cookie and send the response back to the user
 
-            res.cookie("token",token);
+            res.cookie("token",token, { expires : new Date(Date.now() + 8 * 3600000) });
 
             res.status(200).send("Login successfull!");
         }else{
@@ -110,24 +110,7 @@ app.get("/profile", userAuth, async (req,res) => {
 
     try{
 
-        const cookies = req.cookies; // will get from the browser console of the logged in user
-
-        const {token} = cookies; 
-
-        if(!token){
-            throw new Error("Invalid Token!")
-        }
-
-        // validate my token
-        const decodedMessage = await jwt.verify(token, "DEV@Tinder$790"); // will get the decoded  _id of the user from the token
-
-        const { _id } = decodedMessage; // we will get info about the logged in user
-
-        const user = await User.findById(_id);
-
-        if(!user){
-            throw new Error("User does not exists");
-        }
+        const user = req.user; // coming from the userAuth middleware req obj
 
         res.status(200).send(user);
 
@@ -138,97 +121,19 @@ app.get("/profile", userAuth, async (req,res) => {
 })
 
 
-// get user by email
-app.get("/user", async (req,res) => {
-    const userEmail = req.body.emailId;
+// post - send connection request
 
-    try {
-      const users =  await User.find({emailId : userEmail});
+app.post("/sendConnectionRequest",userAuth, async (req,res) => {
 
-      if(users.length === 0){
-         res.status(404).send("User not found");
-       }else{
-         res.send(users);
-       }
-             
-    } catch (error) {
-        res.status(400).send("Cannot get the userEmail")
-    }
+    // we can read the user who is sending the request beacause userAuth middleware attach the user with the request obj
+
+    const user = req.user;
+
+    // sending a connection request
+    console.log("Sending a connection request");
+
+    res.status(200).send(user.firstName +" sent the connection request!") 
 })
-
-// /feed -> route
-app.get("/feed", async (req,res) => {
-
-    try {
-
-        const users = await User.find({});
-
-        res.send(users);
-        
-    } catch (error) {
-        res.status(400).send("cannot get the users for your feed")
-    }
-
-})
-
-
-// /user -> route = delete a user from the db
-app.delete("/user",async (req,res) => {
-    
-    const userId = req.body.userId;
-
-    try {
-
-        const user = await User.findByIdAndDelete({_id : userId});
-
-        res.send("User deleted successfully")
-        
-    } catch (error) {
-        res.status(400).send("cannot get the user,so we cannot delete it")
-    }
-})
-
-
-// /user -> update the user in the db
-app.patch("/user/:userId", async (req,res) => {
-    
-    const userId = req.params?.userId;
-    const data = req.body;
-
-
-    try {
-     
-     // user is allowed to change the certain fields only
-     const allowedUpdates = [
-        "photoUrl",
-        "about",
-        "gender",
-        "age",
-        "skills"
-     ]
-
-        const isAllowedUpdates = Object.keys(data).every((k) => allowedUpdates.includes(k));
-
-        if(!isAllowedUpdates){
-            throw new Error("Update not allowed");
-        }
-
-        if(data?.skills.length > 10){
-            throw new Error("Skills cannot be more than  10");
-        }
-      
-      // find and update the user
-        await User.findByIdAndUpdate({_id : userId}, data, {
-            runValidators : true,
-        });
-
-        res.send("User updated successfully")
-    } catch (error) {
-        res.status(400).send("Update Failed !!!" + error.message);
-    }
-})
-
-
 
 // Database connection
 
