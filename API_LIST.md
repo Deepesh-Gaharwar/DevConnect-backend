@@ -12,9 +12,13 @@
 - PATCH /profile/forgot-password
 
  
- ##  connectionRequestRouter
+ ##  connectionRequestRouter   
 - POST /request/send/interested/:userId
 - POST /request/send/ignored/:userId
+
+    - Make status dynamic to work for interested and ignored
+- POST /request/send/:status/:userId 
+
 - POST /request/review/accepted/:requestId
 - POST /request/review/rejected/:requestId
 
