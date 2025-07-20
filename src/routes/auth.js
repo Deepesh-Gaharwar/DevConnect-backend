@@ -18,7 +18,7 @@ authRouter.post("/signup",async (req,res) => {
 
      //encrypt the password
 
-     const {firstName, lastName, emailId, password} = req.body;
+     const {firstName, lastName, emailId, password, age, gender} = req.body;
 
       const passwordHash = await bcrypt.hash(password,10);
       
@@ -30,11 +30,25 @@ authRouter.post("/signup",async (req,res) => {
          lastName,
          emailId,
          password : passwordHash,
+         age,
+         gender,
        });
 
-        await user.save();
+        const savedUser = await user.save();
 
-        res.status(200).send("User added successfully");
+           // create a JWT token
+
+            const token = await user.getJWT(); // coming from the userSchema that has offloaded method of getJWt()
+
+
+            // add the token to cookie and send the response back to the user
+
+            res.cookie("token",token, { expires : new Date(Date.now() + 8 * 3600000) });
+
+        res.status(200).json({
+            message : "User added successfully",
+            data : savedUser
+        });
         
     }catch(err){
        res.status(400).send("Error :"+ err.message) ; 
@@ -81,13 +95,16 @@ authRouter.post("/login", async (req,res) => {
 
             res.cookie("token",token, { expires : new Date(Date.now() + 8 * 3600000) });
 
-            res.status(200).send("Login successfull!");
+            res.status(200).json({
+                message : "Logged In Successfully!",
+                data : user
+            });
         }else{
             throw new Error("Invalid credentials!");
         }
         
     } catch (error) {
-        res.status(400).send("Error :" +error.message);
+        res.status(400).send("Error : " +error.message);
         
     }
 })

@@ -34,7 +34,7 @@ profileRouter.patch("/profile/edit", userAuth, async (req,res) => {
             throw new Error("Invalid Edit Request!");
         }
 
-        const {firstName,lastName,emailId,photoUrl,age,about,skills} = req.body;
+        const {firstName,lastName,emailId,photoUrl,age,about,skills, gender} = req.body;
         
 
         if(firstName && firstName.length > 50 || lastName && lastName.length > 20 ){
@@ -56,10 +56,15 @@ profileRouter.patch("/profile/edit", userAuth, async (req,res) => {
         if (age && (!Number.isInteger(Number(age)) || age < 18 || age > 65)) {
            throw new Error("Age must be a valid number between 18 and 65.");
         } 
+
+        // validate gender
+        if (gender && !["male", "female", "other"].includes(gender.toLowerCase())) {
+            throw new Error("Gender must be one of: male, female, or other.");
+        }
         
         // is about valid
-        if(about && about.length > 50){
-           throw new Error("About should not be more than 50 characters");
+        if(about && about.length > 300){
+           throw new Error("About should not be more than 300 characters");
         } 
         
         // is skills valid
@@ -97,47 +102,58 @@ profileRouter.patch("/profile/edit", userAuth, async (req,res) => {
 })
 
 
-// /profile/forgot-password -> route
-profileRouter.patch("/profile/forgot-password",userAuth, async (req,res) => {
-
+    // PATCH /profile/forgot-password
+    profileRouter.patch("/profile/forgot-password", userAuth, async (req, res) => {
     try {
-
-        const { oldPassword, newPassword } = req.body ;
-
-         
+        const { emailId, oldPassword, newPassword } = req.body;
 
         const loggedInUser = req.user;
 
-        // validate the password
+        // Must send either emailId or oldPassword (not both, not none)
+        const sentEmail = !!emailId;
+        const sentOldPassword = !!oldPassword;
+
+        if ((sentEmail && sentOldPassword) || (!sentEmail && !sentOldPassword)) {
+        throw new Error("Send either emailId or oldPassword, not both or none.");
+        }
+
+        // Authenticate using email
+        if (sentEmail) {
+        if (!validator.isEmail(emailId)) {
+            throw new Error("Invalid email format.");
+        }
+
+        if (emailId !== loggedInUser.emailId) {
+            throw new Error("Email does not match the logged-in user.");
+        }
+        }
+
+        // Authenticate using oldPassword
+        if (sentOldPassword) {
         const isPasswordValid = await loggedInUser.validatePassword(oldPassword);
-
-        if(!isPasswordValid){
-            throw new Error("Enter the correct old password!");
-
+        if (!isPasswordValid) {
+            throw new Error("Old password is incorrect.");
+        }
         }
 
-       // is new password is strong
-        if(!validator.isStrongPassword(newPassword)){
-            throw new Error("Enter a strong new password!");
+        // Validate new password
+        if (!validator.isStrongPassword(newPassword)) {
+        throw new Error("Enter a strong new password.");
         }
-        
-        // before saving the password -> first hash the new password
-        const newPasswordHash = await bcrypt.hash(newPassword,10);
 
-        // forgot the password -> edit
+        // Hash and update the new password
+        const newPasswordHash = await bcrypt.hash(newPassword, 10);
         loggedInUser.password = newPasswordHash;
-        
-        // save to the DB
+
         await loggedInUser.save();
 
         res.status(200).send("Password updated successfully!");
         
     } catch (error) {
-
-        res.status(400).send("Error : "+error.message);
-        
+        res.status(400).send("Error: " + error.message);
     }
-})
+    });
+
 
 
 module.exports = {

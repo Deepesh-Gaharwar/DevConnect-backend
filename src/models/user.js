@@ -45,15 +45,16 @@ const userSchema = new mongoose.Schema({
     },
     gender : {
         type : String,
+        set: (v) => v?.trim().toLowerCase(),
         validate(value) {
-            if(!["male","female","others"].includes(value)){
+            if(!["male","female","other"].includes(value)){
                 throw new Error("Gender data is not valid");
             }
         }
     },
     photoUrl : {
         type : String,
-        default : "https://sipl.ind.in/leadership-team/",
+        default : "https://www.kalasalingam.ac.in/wp-content/uploads/2021/08/Achievements-dummy-profile.png",
         validate(value){
             if(!validator.isURL(value)){
                 throw new Error("Invalid photo URL !!!");
@@ -64,10 +65,11 @@ const userSchema = new mongoose.Schema({
         type : String,
         default : "This is the default about of the user",
         minLength : 0,
-        maxLength : 50,
+        maxLength : 300,
     },
     skills : {
         type : [String],
+        minLength : 0,
         maxLength : 10,
     }
 }
