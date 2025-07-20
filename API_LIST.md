@@ -1,4 +1,4 @@
-# DevConnect APIs
+# DevTinder APIs
 
  ## authRouter
 - POST /signup
