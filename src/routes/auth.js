@@ -110,16 +110,29 @@ authRouter.post("/login", async (req,res) => {
 })
 
 
-// logout -> route
-authRouter.post("/logout", async (req,res) => {
+authRouter.post("/logout", async (req, res) => {
+    try {
+        
+        res.cookie("token", "", {
+            expires: new Date(0), // Immediately expire
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production", 
+            sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+            path: "/"
+        });
 
-    res.cookie("token", null, { expires : new Date(Date.now()),
-
-    });
-   
-    res.status(200).send("Logout successful!");
-
-})
+        res.status(200).json({ 
+            success: true,
+            message: "Logout successful" 
+        });
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Logout failed" 
+        });
+    }
+});
 
 
 
