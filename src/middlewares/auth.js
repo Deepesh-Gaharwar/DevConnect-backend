@@ -3,6 +3,8 @@ const { User } = require("../models/user");
 
 const userAuth = async(req,res,next) => {
 
+  const JWT_SECRET = process.env.JWT_SECRET;
+
     try {
         
       // read the token from the req cookies 
@@ -16,7 +18,7 @@ const userAuth = async(req,res,next) => {
 
       // validate the token
 
-      const decodedObj = await jwt.verify(token,"DEV@Tinder$790");
+      const decodedObj = await jwt.verify(token,JWT_SECRET);
       
      // Find the user
 

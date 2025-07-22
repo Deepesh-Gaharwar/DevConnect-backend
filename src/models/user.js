@@ -83,11 +83,13 @@ const userSchema = new mongoose.Schema({
 
 userSchema.methods.getJWT = async function () {
 
+   const JWT_SECRET = process.env.JWT_SECRET;
+
    const user = this; // not works in arrow functions
 
   const token = await  jwt.sign(
     { _id : user._id} , 
-    "DEV@Tinder$790",
+      JWT_SECRET,
      { expiresIn : "1d",}
     );
 

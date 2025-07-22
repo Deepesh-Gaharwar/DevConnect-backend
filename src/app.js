@@ -31,11 +31,13 @@ app.use("/",userRouter);
 
 // Database connection
 
+const PORT = process.env.PORT || 4000;
+
 connectDB().then( () => {
     console.log("Databse connection established successfully !!!");
 
-    app.listen(3000, () => {
-    console.log("Server is successfully listening on port 3000...")
+    app.listen(PORT, () => {
+    console.log(`Server is successfully listening on port ${PORT} ...`)
 
     });
 
