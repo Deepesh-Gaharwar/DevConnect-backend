@@ -3,6 +3,7 @@ const {connectDB} = require("./DB/db.js");
 const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+require("dotenv").config();
 
 // cors and whitelisting of the frontend URl
 app.use(cors({
