@@ -37,18 +37,25 @@ authRouter.post("/signup",async (req,res) => {
 
         const savedUser = await user.save();
 
-           // create a JWT token
+       // removing password from savedUser
+        const userObj = savedUser.toObject();
+        delete userObj.password;
 
-            const token = await user.getJWT(); // coming from the userSchema that has offloaded method of getJWt()
+        // create a JWT token
+
+        const token = await user.getJWT(); // coming from the userSchema that has offloaded method of getJWt()
 
 
-            // add the token to cookie and send the response back to the user
+        // add the token to cookie and send the response back to the user
 
-            res.cookie("token",token, { expires : new Date(Date.now() + 8 * 3600000) });
+        res.cookie("token", token, {
+            httpOnly: true,
+            expires: new Date(Date.now() + 8 * 3600000),
+        });
 
         res.status(200).json({
-            message : "User added successfully",
-            data : savedUser
+          message: "User added successfully",
+          data: userObj,
         });
         
     }catch(err){
@@ -86,26 +93,28 @@ authRouter.post("/login", async (req,res) => {
         const isPasswordValid = await user.validatePassword(password); // this is sent by the user 
 
         if(isPasswordValid){
-            
-            // create a JWT token
+          // create a JWT token
 
-            const token = await user.getJWT(); // coming from the userSchema that has offloaded method of getJWt()
+          const token = await user.getJWT(); // coming from the userSchema that has offloaded method of getJWt()
 
+          // add the token to cookie and send the response back to the user
 
-            // add the token to cookie and send the response back to the user
-
-            
-            res.cookie("token", token, {
+          res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", 
+            secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-            });
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          });
 
-            res.status(200).json({
-                message : "Logged In Successfully!",
-                data : user
-            });
+          // removing password from user
+          const userObj = user.toObject();
+          delete userObj.password;
+
+          res.status(200).json({
+            message: "Logged In Successfully!",
+            data: userObj,
+          });
+
         }else{
             throw new Error("Invalid credentials!");
         }
