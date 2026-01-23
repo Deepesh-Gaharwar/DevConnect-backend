@@ -49,8 +49,11 @@ authRouter.post("/signup",async (req,res) => {
         // add the token to cookie and send the response back to the user
 
         res.cookie("token", token, {
-            httpOnly: true,
-            expires: new Date(Date.now() + 8 * 3600000),
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          path: "/",
+          expires: new Date(Date.now() + 8 * 3600000),
         });
 
         res.status(200).json({
@@ -103,6 +106,7 @@ authRouter.post("/login", async (req,res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            path: "/",
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
           });
 
@@ -130,11 +134,11 @@ authRouter.post("/logout", async (req, res) => {
     try {
         
         res.cookie("token", "", {
-            expires: new Date(0), // Immediately expire
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production", 
-            sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
-            path: "/"
+          expires: new Date(0), // Immediately expire
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+          path: "/",
         });
 
         res.status(200).json({ 
