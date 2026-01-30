@@ -34,13 +34,17 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
 
         // save it in my DB
         const payment = new PaymentModel({
-            userId: req.user._id,
-            orderId: order.id,
-            status: order.status,
-            amount: order.amount,
-            currency: order.currency,
-            receipt: order.receipt,
-            notes: order.notes,
+          userId: req.user._id,
+          orderId: order.id,
+          status: order.status,
+          amount: order.amount,
+          currency: order.currency,
+          receipts: order.receipt,
+          notes: {
+            firstName: firstName,
+            lastName: lastName,
+            membershipType: membershipType,
+          },
         });
 
         const  savedPayment = await payment.save();
