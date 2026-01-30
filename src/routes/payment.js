@@ -63,8 +63,7 @@ paymentRouter.post("/payment/webhook", async (req, res) => {
   try {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-    const WebhookSignature =
-      req.headers[process.env.RAZORPAY_WEBHOOK_SIGNATURE];
+    const WebhookSignature = req.headers["x-razorpay-signature"];
 
     const isWebHookValid = validateWebhookSignature(
       JSON.stringify(req.body),
@@ -123,12 +122,16 @@ paymentRouter.get("/premium/verify", userAuth, async(req, res) => {
 
   try {
 
-    const user = req.user;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ isPremium: false });
+    }
 
     // return a response, whether premium or not
     return res.status(200).json({
-      isPremium: user.isPremium || false,
-      membershipType: user.membershipType || null,
+      isPremium: user.isPremium,
+      membershipType: user.membershipType,
     });
 
   } catch (error) {
