@@ -122,7 +122,7 @@ paymentRouter.get("/premium/verify", userAuth, async(req, res) => {
 
   try {
 
-    const user = await User.findOne(req.user._id);
+    const user = await User.findOne({ _id: req.user._id });
 
     if (!user) {
       return res.status(404).json({ isPremium: false });
