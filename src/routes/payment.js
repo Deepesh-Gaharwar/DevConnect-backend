@@ -60,7 +60,7 @@ paymentRouter.post("/payment/webhook", async (req, res) => {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
     const WebhookSignature =
-      req.headers(process.env.RAZORPAY_WEBHOOK_SIGNATURE);
+      req.headers[process.env.RAZORPAY_WEBHOOK_SIGNATURE];
 
     const isWebHookValid = validateWebhookSignature(
       JSON.stringify(req.body),
@@ -77,13 +77,22 @@ paymentRouter.post("/payment/webhook", async (req, res) => {
 
     const payment = await PaymentModel.findOne({orderId: paymentDetails.order_id});
 
+    if (!payment) {
+      return res.status(404).json({ msg: "Payment not found" });
+    }
+
     //update status
-    payment.status = paymentDetails.payment.status;
+    payment.status = paymentDetails.status;
 
     await payment.save(); // saved to DB
 
 
     const user = await User.findOne({_id: payment.userId});
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
     user.isPremium = true;
     user.membershipType = payment.notes.membershipType;
 
@@ -112,13 +121,19 @@ paymentRouter.get("/premium/verify", userAuth, async(req, res) => {
 
     const user = req.user;
 
-    if(user.isPremium) {
-      return res.status(200).json({isPremium: true});
-    }
+    // return a response, whether premium or not
+    return res.status(200).json({
+      isPremium: user.isPremium || false,
+      membershipType: user.membershipType || null,
+    });
     
   } catch (error) {
      
-    return res.status(400).json({isPremium: false});
+    return res.status(500).json({
+      isPremium: false,
+      msg: error.message,
+    });
+
   }
 
 });
