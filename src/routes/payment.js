@@ -14,7 +14,7 @@ paymentRouter.post("/payment/create", userAuth, async (req, res) => {
         const { firstName, lastName, emailId } = req.user;
         const {membershipType} = req.body;
 
-        const amount = membershipAmount(membershipType);
+        const amount = membershipAmount[membershipType];
 
         if (!amount) {
           return res.status(400).json({ msg: "Invalid membership type" });
@@ -126,7 +126,7 @@ paymentRouter.get("/premium/verify", userAuth, async(req, res) => {
       isPremium: user.isPremium || false,
       membershipType: user.membershipType || null,
     });
-    
+
   } catch (error) {
      
     return res.status(500).json({
