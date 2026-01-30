@@ -21,12 +21,14 @@ const { authRouter } = require("./routes/auth.js");
 const { profileRouter } = require("./routes/profile.js");
 const { connectionRequestRouter } = require("./routes/connectionRequests.js");
 const { userRouter } = require("./routes/user.js");
+const paymentRouter = require("./routes/payment.js");
 
 
 app.use("/",authRouter);
 app.use("/",profileRouter);
 app.use("/",connectionRequestRouter);
 app.use("/",userRouter);
+app.use("/", paymentRouter);
 
 
 

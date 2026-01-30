@@ -53,6 +53,13 @@ const userSchema = new mongoose.Schema({
             }
         }
     },
+    isPremium: {
+        type: Boolean,
+        default: false
+    },
+    membershipType: {
+        type: String,       
+    },
     photoUrl : {
         type : String,
         default : "https://www.kalasalingam.ac.in/wp-content/uploads/2021/08/Achievements-dummy-profile.png",
