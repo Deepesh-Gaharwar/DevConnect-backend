@@ -4,6 +4,7 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 require("dotenv").config();
+const http = require("http");
 
 // cors and whitelisting of the frontend URl
 app.use(cors({
@@ -22,6 +23,7 @@ const { profileRouter } = require("./routes/profile.js");
 const { connectionRequestRouter } = require("./routes/connectionRequests.js");
 const { userRouter } = require("./routes/user.js");
 const paymentRouter = require("./routes/payment.js");
+const initializeSocket = require("./utils/socket.js");
 
 
 app.use("/",authRouter);
@@ -31,6 +33,11 @@ app.use("/",userRouter);
 app.use("/", paymentRouter);
 
 
+// create a server for socket.io
+const server = http.createServer(app);
+
+// socket configuration
+initializeSocket(server);
 
 // Database connection
 
@@ -39,7 +46,7 @@ const PORT = process.env.PORT || 4000;
 connectDB().then( () => {
     console.log("Databse connection established successfully !!!");
 
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
     console.log(`Server is successfully listening on port ${PORT} ...`)
 
     });
