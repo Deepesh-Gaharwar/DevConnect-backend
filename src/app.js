@@ -24,6 +24,7 @@ const { connectionRequestRouter } = require("./routes/connectionRequests.js");
 const { userRouter } = require("./routes/user.js");
 const paymentRouter = require("./routes/payment.js");
 const initializeSocket = require("./utils/socket.js");
+const chatRouter = require("./routes/chat.js");
 
 
 app.use("/",authRouter);
@@ -31,6 +32,7 @@ app.use("/",profileRouter);
 app.use("/",connectionRequestRouter);
 app.use("/",userRouter);
 app.use("/", paymentRouter);
+app.use("/", chatRouter);
 
 
 // create a server for socket.io
