@@ -24,7 +24,7 @@ const { connectionRequestRouter } = require("./routes/connectionRequests.js");
 const { userRouter } = require("./routes/user.js");
 const paymentRouter = require("./routes/payment.js");
 const initializeSocket = require("./utils/socket.js");
-const chatRouter = require("./routes/chat.js");
+const { chatRouter } = require("./routes/chat.js");
 
 
 app.use("/",authRouter);
