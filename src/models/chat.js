@@ -2,21 +2,26 @@ const mongoose = require("mongoose");
 
 // message Schema
 const messageSchema = new mongoose.Schema(
-    {
-        senderId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
-        text: {
-            type: String,
-            required: true,
-        }
-
+  {
+    senderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
-    {
-        timestamps: true,
-    }
+    text: {
+      type: String,
+      required: true,
+    },
+    deliveredAt: {
+      type: Date,
+    },
+    seenAt: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  },
 );
 
 

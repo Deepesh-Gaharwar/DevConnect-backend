@@ -151,6 +151,36 @@ userRouter.get("/user/feed", userAuth, async (req,res) => {
 })
 
 
+// last seen API
+userRouter.get("/user/last-seen/:userId", userAuth, async (req, res) => {
+  const { userId } = req.params;
+
+  const user = await User.findById(userId).select("lastSeenAt");
+
+  res.status(200).json({
+    lastSeenAt: user?.lastSeenAt,
+  });
+});
+
+
+// get user details by ID(chat, header, profile)
+userRouter.get("/user/:userId", userAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId)
+      .select("firstName lastName photoUrl");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 
 module.exports = {
     userRouter,
