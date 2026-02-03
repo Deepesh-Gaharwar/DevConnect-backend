@@ -6,6 +6,8 @@ const bcrypt = require("bcrypt");
 
 const { userAuth } = require("../middlewares/auth.js");
 const { validateEditProfileData } = require("../utils/validation.js");
+const { User } = require("../models/user");
+const { sendMail } = require("../utils/sendMail");
 
 
 // profile/view -> route
@@ -19,7 +21,7 @@ profileRouter.get("/profile/view", userAuth, async (req,res) => {
 
     } catch(error){
          
-        res.status(400).send("Error :" + error.message);
+        res.status(401).send("Error :" + error.message);
     }
 })
 
@@ -102,57 +104,147 @@ profileRouter.patch("/profile/edit", userAuth, async (req,res) => {
 })
 
 
-    // PATCH /profile/forgot-password
-    profileRouter.patch("/profile/forgot-password", userAuth, async (req, res) => {
+// POST /profile/forgot-password/send-otp
+profileRouter.post(
+  "/profile/forgot-password/send-otp",
+  async (req, res) => {
     try {
-        const { emailId, oldPassword, newPassword } = req.body;
+      const { emailId } = req.body;
 
-        const loggedInUser = req.user;
+      if (!validator.isEmail(emailId)) {
+        throw new Error("Invalid email");
+      }
 
-        // Must send either emailId or oldPassword (not both, not none)
-        const sentEmail = !!emailId;
-        const sentOldPassword = !!oldPassword;
+      const user = await User.findOne({ emailId });
 
-        if ((sentEmail && sentOldPassword) || (!sentEmail && !sentOldPassword)) {
-        throw new Error("Send either emailId or oldPassword, not both or none.");
-        }
+      // Prevent email enumeration
+      if (!user) {
+        return res.status(200).send("If the email exists, OTP has been sent.");
+      }
 
-        // Authenticate using email
-        if (sentEmail) {
-        if (!validator.isEmail(emailId)) {
-            throw new Error("Invalid email format.");
-        }
+      // check for validity, that it has attemps left for today or not 
+      if (user.resetOtpBlockedUntil && user.resetOtpBlockedUntil > Date.now()) {
 
-        if (emailId !== loggedInUser.emailId) {
-            throw new Error("Email does not match the logged-in user.");
-        }
-        }
+        return res.status(429).json({
+          message: "OTP attempts exceeded. Try again after 24 hours.",
+          retryAfter: user.resetOtpBlockedUntil,
+        });
+      }
 
-        // Authenticate using oldPassword
-        if (sentOldPassword) {
-        const isPasswordValid = await loggedInUser.validatePassword(oldPassword);
-        if (!isPasswordValid) {
-            throw new Error("Old password is incorrect.");
-        }
-        }
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Validate new password
-        if (!validator.isStrongPassword(newPassword)) {
-        throw new Error("Enter a strong new password.");
-        }
+      user.resetOtpHash = await bcrypt.hash(otp, 10);
+      user.resetOtpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+      user.resetOtpAttempts = 0;
 
-        // Hash and update the new password
-        const newPasswordHash = await bcrypt.hash(newPassword, 10);
-        loggedInUser.password = newPasswordHash;
+      await user.save();
 
-        await loggedInUser.save();
+      // sendMail
+      await sendMail({
+        to: emailId,
+        subject: "🔐 Reset Your DevConnect Password",
+        text: `Your OTP is ${otp}. It will expire in 10 minutes.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6">
+            <h2>DevConnect Password Reset</h2>
+            <p>Use the OTP below to reset your password:</p>
+            <h1 style="letter-spacing: 4px;">${otp}</h1>
+            <p><b>Valid for 10 minutes</b></p>
+            <p>If you didn’t request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
 
-        res.status(200).send("Password updated successfully!");
-        
-    } catch (error) {
-        res.status(400).send("Error: " + error.message);
+      res.status(200).send("OTP sent to your email");
+    } catch (err) {
+      res.status(400).send(err.message);
     }
-    });
+  }
+);
+
+
+
+// POST /profile/forgot-password/verify-otp
+profileRouter.post("/profile/forgot-password/verify-otp", async (req, res) => {
+  try {
+    const { emailId, otp } = req.body;
+
+    const user = await User.findOne({ emailId });
+
+    if (!user || !user.resetOtpHash) {
+      throw new Error("Invalid request");
+    }
+
+    // Check if blocked
+    if (user.resetOtpBlockedUntil && user.resetOtpBlockedUntil > Date.now()) {
+      const retryAfter = user.resetOtpBlockedUntil;
+      return res.status(429).json({
+        message: "Too many attempts",
+        retryAfter,
+      });
+    }
+
+    // Expired OTP
+
+    if (user.resetOtpExpires < Date.now()) {
+      throw new Error("OTP expired");
+    }
+
+    const isValid = await bcrypt.compare(otp, user.resetOtpHash);
+
+    if (!isValid) {
+      user.resetOtpAttempts += 1;
+
+      // Lock after 5 attempts
+      if (user.resetOtpAttempts >= 5) {
+        user.resetOtpBlockedUntil = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+      }
+
+      await user.save();
+
+      throw new Error("Invalid OTP");
+    }
+
+    // OTP correct - reset attempts
+    user.resetOtpAttempts = 0;
+    user.resetOtpBlockedUntil = undefined;
+    await user.save();
+
+    res.status(200).send("OTP verified");
+
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+});
+
+// PATCH /profile/forgot-password/reset
+
+profileRouter.patch("/profile/forgot-password/reset", async (req, res) => {
+  try {
+    const { emailId, newPassword } = req.body;
+
+    if (!validator.isStrongPassword(newPassword)) {
+      throw new Error("Weak password");
+    }
+
+    const user = await User.findOne({ emailId });
+    if (!user || !user.resetOtpHash) {
+      throw new Error("Unauthorized");
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetOtpHash = undefined;
+    user.resetOtpExpires = undefined;
+    user.resetOtpAttempts = undefined;
+
+    await user.save();
+
+    res.status(200).send("Password reset successful");
+  } catch (err) {
+    res.status(400).send(err.message);
+  }
+});
+
 
 
 

@@ -83,7 +83,21 @@ const userSchema = new mongoose.Schema(
     lastSeenAt: {
       type: Date,
     },
+    resetOtpHash: {
+      type: String,
+    },
+    resetOtpExpires: {
+      type: Date,
+    },
+    resetOtpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    resetOtpBlockedUntil: {
+      type: Date,
+    },
   },
+
   {
     timestamps: true,
   },
